@@ -1,1 +1,27 @@
-// app global css in SCSS form
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+:root {
+	--surface-0: #f4f8ff;
+	--surface-1: #ffffff;
+	--ink-main: #18274b;
+	--ink-soft: rgba(24, 39, 75, 0.72);
+}
+
+body {
+	min-height: 100vh;
+	font-family: 'IBM Plex Mono', monospace;
+	color: var(--ink-main);
+	background:
+		radial-gradient(circle at 86% 8%, rgba(255, 172, 96, 0.2), transparent 32%),
+		radial-gradient(circle at 10% 92%, rgba(52, 175, 255, 0.14), transparent 36%),
+		linear-gradient(180deg, #f9fbff 0%, var(--surface-0) 55%, #eef4ff 100%);
+}
+
+#q-app {
+	min-height: 100vh;
+}
+
+::selection {
+	background: rgba(255, 154, 109, 0.32);
+	color: var(--ink-main);
+}

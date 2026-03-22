@@ -92,7 +92,7 @@ jobs:
           files: jwt-decoder-${{ github.ref_name }}.zip
 
       - name: Build app for GitHub Pages subpath
-        run: PUBLIC_PATH=/jwt-decoder/ yarn build
+        run: PUBLIC_PATH=/${GITHUB_REPOSITORY#*/}/ yarn build
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3

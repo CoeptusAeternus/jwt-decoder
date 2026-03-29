@@ -42,16 +42,29 @@ const emit = defineEmits<{
   clear: [];
 }>();
 
+function trimWrappingQuotes(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (
+    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"'))
+    || (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"))
+  ) {
+    return trimmedValue.slice(1, -1);
+  }
+
+  return value;
+}
+
 function onUpdate(value: string | number | null) {
-  emit('update:modelValue', String(value ?? ''));
+  emit('update:modelValue', trimWrappingQuotes(String(value ?? '')));
 }
 
 function onUpdateSecret(value: string | number | null) {
-  emit('update:sharedSecret', String(value ?? ''));
+  emit('update:sharedSecret', trimWrappingQuotes(String(value ?? '')));
 }
 
 function onUpdatePublicKey(value: string | number | null) {
-  emit('update:publicKey', String(value ?? ''));
+  emit('update:publicKey', trimWrappingQuotes(String(value ?? '')));
 }
 </script>
 

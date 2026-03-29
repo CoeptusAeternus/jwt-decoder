@@ -35,11 +35,12 @@ const QBtnStub = defineComponent({
 });
 
 describe("JwtInputPanel", () => {
-  it("trims wrapping quotes from token and shared secret inputs", async () => {
+  it("trims wrapping quotes from token, shared secret, and public key inputs", async () => {
     const wrapper = mount(JwtInputPanel, {
       props: {
         modelValue: "",
         sharedSecret: "",
+        publicKey: "",
       },
       global: {
         stubs: {
@@ -55,10 +56,14 @@ describe("JwtInputPanel", () => {
     const inputs = wrapper.findAll(".q-input-stub");
     await inputs[0]?.trigger("click");
     await inputs[1]?.trigger("click");
+    await inputs[2]?.trigger("click");
 
     expect(wrapper.emitted("update:modelValue")?.[0]).toEqual(["next-token"]);
     expect(wrapper.emitted("update:sharedSecret")?.[0]).toEqual([
       "next-secret",
+    ]);
+    expect(wrapper.emitted("update:publicKey")?.[0]).toEqual([
+      "next-public-key",
     ]);
   });
 
@@ -67,6 +72,7 @@ describe("JwtInputPanel", () => {
       props: {
         modelValue: "abc",
         sharedSecret: "secret",
+        publicKey: "",
       },
       global: {
         stubs: {

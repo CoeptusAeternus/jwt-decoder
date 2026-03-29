@@ -13,8 +13,18 @@ const QInputStub = defineComponent({
     label: { type: String, default: "" },
   },
   emits: ["update:modelValue"],
+  setup(props, { emit }) {
+    function emitValue() {
+      emit(
+        "update:modelValue",
+        props.label === "JWT" ? '"next-token"' : "'next-secret'",
+      );
+    }
+
+    return { emitValue };
+  },
   template:
-    "<button class=\"q-input-stub\" :data-label=\"label\" @click=\"$emit('update:modelValue', label === 'JWT' ? 'next-token' : 'next-secret')\" />",
+    '<button class="q-input-stub" :data-label="label" @click="emitValue" />',
 });
 
 const QBtnStub = defineComponent({
@@ -25,7 +35,7 @@ const QBtnStub = defineComponent({
 });
 
 describe("JwtInputPanel", () => {
-  it("emits updates for token and shared secret inputs", async () => {
+  it("trims wrapping quotes from token and shared secret inputs", async () => {
     const wrapper = mount(JwtInputPanel, {
       props: {
         modelValue: "",

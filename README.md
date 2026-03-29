@@ -39,3 +39,61 @@ yarn dev
 ```
 
 The development server runs at http://localhost:9000.
+
+## Testing
+
+Tests in this project are powered by Vitest.
+
+### When Tests Run Automatically
+
+The full test suite runs automatically in GitHub Actions CI:
+
+- On every pull request
+
+CI workflow file:
+
+- `.github/workflows/ci.yml`
+
+The CI job installs dependencies and runs:
+
+```bash
+yarn test
+```
+
+### Run Tests Manually
+
+After installing dependencies, run the test suite locally with:
+
+```bash
+yarn test
+```
+
+If you use npm instead of Yarn, run:
+
+```bash
+npm run test
+```
+
+This executes all unit tests once in non-watch mode (`vitest run`).
+
+### Run Tests using Docker
+
+The Dockerfile contains a dedicated `test` stage that runs the Vitest suite during image build.
+
+Build the test stage to run tests in an isolated container environment:
+
+```bash
+docker build --target test .
+```
+
+If tests fail, the build exits with a non-zero status.
+If tests pass, the test stage finishes successfully.
+
+Optionally tag the image while running tests:
+
+```bash
+docker build --target test -t jwt-decoder:test .
+```
+
+This is useful when you want containerized test execution without requiring Node.js tooling on your host machine.
+

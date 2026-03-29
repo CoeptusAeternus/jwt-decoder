@@ -12,8 +12,14 @@
 
     <q-card-section>
       <q-input :model-value="sharedSecret" label="Shared secret" outlined dense type="password" spellcheck="false"
-        autocomplete="off" placeholder="Optional for alg=none, required for HS256/HS384/HS512"
+        autocomplete="off" placeholder="required for HS256/HS384/HS512 validation"
         @update:model-value="onUpdateSecret" />
+    </q-card-section>
+
+    <q-card-section>
+      <q-input :model-value="publicKey" label="RSA public key (PEM/SPKI)" autogrow type="textarea" outlined dense
+        spellcheck="false" autocomplete="off" placeholder="required for RS256/RS384/RS512 validation"
+        @update:model-value="onUpdatePublicKey" />
     </q-card-section>
 
     <q-card-actions align="between" class="panel-actions">
@@ -26,11 +32,13 @@
 defineProps<{
   modelValue: string;
   sharedSecret: string;
+  publicKey: string;
 }>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
   'update:sharedSecret': [value: string];
+  'update:publicKey': [value: string];
   clear: [];
 }>();
 
@@ -40,6 +48,10 @@ function onUpdate(value: string | number | null) {
 
 function onUpdateSecret(value: string | number | null) {
   emit('update:sharedSecret', String(value ?? ''));
+}
+
+function onUpdatePublicKey(value: string | number | null) {
+  emit('update:publicKey', String(value ?? ''));
 }
 </script>
 

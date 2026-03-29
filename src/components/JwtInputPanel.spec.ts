@@ -13,8 +13,7 @@ const QInputStub = defineComponent({
     label: { type: String, default: "" },
   },
   emits: ["update:modelValue"],
-  template:
-    "<button class=\"q-input-stub\" :data-label=\"label\" @click=\"$emit('update:modelValue', label === 'JWT' ? 'next-token' : 'next-secret')\" />",
+  template: `<button class="q-input-stub" :data-label="label" @click="$emit('update:modelValue', label === 'JWT' ? 'next-token' : label === 'Shared secret' ? 'next-secret' : 'next-public-key')" />`,
 });
 
 const QBtnStub = defineComponent({
@@ -25,11 +24,12 @@ const QBtnStub = defineComponent({
 });
 
 describe("JwtInputPanel", () => {
-  it("emits updates for token and shared secret inputs", async () => {
+  it("emits updates for token, shared secret, and public key inputs", async () => {
     const wrapper = mount(JwtInputPanel, {
       props: {
         modelValue: "",
         sharedSecret: "",
+        publicKey: "",
       },
       global: {
         stubs: {
@@ -45,10 +45,14 @@ describe("JwtInputPanel", () => {
     const inputs = wrapper.findAll(".q-input-stub");
     await inputs[0]?.trigger("click");
     await inputs[1]?.trigger("click");
+    await inputs[2]?.trigger("click");
 
     expect(wrapper.emitted("update:modelValue")?.[0]).toEqual(["next-token"]);
     expect(wrapper.emitted("update:sharedSecret")?.[0]).toEqual([
       "next-secret",
+    ]);
+    expect(wrapper.emitted("update:publicKey")?.[0]).toEqual([
+      "next-public-key",
     ]);
   });
 
@@ -57,6 +61,7 @@ describe("JwtInputPanel", () => {
       props: {
         modelValue: "abc",
         sharedSecret: "secret",
+        publicKey: "",
       },
       global: {
         stubs: {

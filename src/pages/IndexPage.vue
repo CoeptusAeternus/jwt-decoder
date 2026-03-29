@@ -12,7 +12,8 @@
     </section>
 
     <section class="workspace-grid">
-      <JwtInputPanel v-model="jwtInput" v-model:shared-secret="sharedSecret" @clear="handleClear" />
+      <JwtInputPanel v-model="jwtInput" v-model:shared-secret="sharedSecret" v-model:public-key="publicKey"
+        @clear="handleClear" />
       <JwtOutputPanel :header-rows="headerRows" :payload-rows="payloadRows" :signature-rows="signatureRows"
         :validation-state="validationState" :validation-messages="validationMessages" />
       <JwtInfoPanel class="workspace-info" />
@@ -29,6 +30,7 @@ import { decodeAndValidateJwt, type TableRow, type ValidationState } from 'src/u
 
 const jwtInput = ref('');
 const sharedSecret = ref('');
+const publicKey = ref('');
 const headerRows = ref<TableRow[]>([{ field: 'status', value: 'Enter a token to decode header data.' }]);
 const payloadRows = ref<TableRow[]>([{ field: 'status', value: 'Enter a token to decode claim data.' }]);
 const signatureRows = ref<TableRow[]>([{ field: 'status', value: 'Signature details appear after token parsing.' }]);
@@ -36,7 +38,7 @@ const validationState = ref<ValidationState>('idle');
 const validationMessages = ref<string[]>(['Validation runs automatically while you type.']);
 let currentRun = 0;
 
-watch([jwtInput, sharedSecret], () => {
+watch([jwtInput, sharedSecret, publicKey], () => {
   void decodeAndValidate();
 });
 
@@ -46,6 +48,7 @@ async function decodeAndValidate() {
   const result = await decodeAndValidateJwt({
     token: jwtInput.value,
     sharedSecret: sharedSecret.value,
+    publicKey: publicKey.value,
   });
 
   if (runId !== currentRun) {
@@ -64,6 +67,7 @@ void decodeAndValidate();
 function handleClear() {
   jwtInput.value = '';
   sharedSecret.value = '';
+  publicKey.value = '';
 }
 </script>
 

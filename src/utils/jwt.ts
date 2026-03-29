@@ -10,10 +10,12 @@ export type DecodeResult = {
 };
 
 type HmacAlgorithm = "HS256" | "HS384" | "HS512";
+type RsaAlgorithm = "RS256" | "RS384" | "RS512";
 
 type DecodeInput = {
   token: string;
   sharedSecret: string;
+  publicKey: string;
   nowEpochSeconds?: number;
 };
 
@@ -54,6 +56,17 @@ function decodeBase64UrlSegment(segment: string): string {
   }
 
   return decodeBase64(normalized);
+}
+
+function decodeBase64UrlToBytes(segment: string): Uint8Array<ArrayBuffer> {
+  const binary = decodeBase64UrlSegment(segment);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes;
 }
 
 function parseJsonSegment(
@@ -127,6 +140,62 @@ async function verifyHmacSignature(
   const expected = bytesToBase64Url(new Uint8Array(signature));
 
   return secureCompare(expected, providedSignature);
+}
+
+function parseRsaPublicKey(publicKey: string): Uint8Array<ArrayBuffer> {
+  const normalized = publicKey.trim();
+
+  if (!normalized) {
+    throw new Error("Public key is empty.");
+  }
+
+  if (normalized.includes("BEGIN PUBLIC KEY")) {
+    const pemBody = normalized
+      .replace(/-----BEGIN PUBLIC KEY-----/g, "")
+      .replace(/-----END PUBLIC KEY-----/g, "")
+      .replace(/\s+/g, "");
+
+    return decodeBase64UrlToBytes(
+      pemBody.replace(/\+/g, "-").replace(/\//g, "_"),
+    );
+  }
+
+  return decodeBase64UrlToBytes(
+    normalized.replace(/\+/g, "-").replace(/\//g, "_"),
+  );
+}
+
+async function verifyRsaSignature(
+  algorithm: RsaAlgorithm,
+  signingInput: string,
+  providedSignature: string,
+  publicKey: string,
+): Promise<boolean> {
+  const algoMap: Record<RsaAlgorithm, string> = {
+    RS256: "SHA-256",
+    RS384: "SHA-384",
+    RS512: "SHA-512",
+  };
+
+  if (!globalThis.crypto?.subtle) {
+    throw new Error("Web Crypto API is not available in this runtime.");
+  }
+
+  const keyBytes = parseRsaPublicKey(publicKey);
+  const key = await globalThis.crypto.subtle.importKey(
+    "spki",
+    keyBytes,
+    { name: "RSASSA-PKCS1-v1_5", hash: algoMap[algorithm] },
+    false,
+    ["verify"],
+  );
+
+  return globalThis.crypto.subtle.verify(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    decodeBase64UrlToBytes(providedSignature),
+    new TextEncoder().encode(signingInput),
+  );
 }
 
 export async function decodeAndValidateJwt(
@@ -253,10 +322,57 @@ export async function decodeAndValidateJwt(
           );
         }
       }
+    } else if (
+      algorithm === "RS256" ||
+      algorithm === "RS384" ||
+      algorithm === "RS512"
+    ) {
+      if (!input.publicKey) {
+        validationIgnored = true;
+        messages.push(
+          `Signature verification ignored for ${algorithm} because no public key was provided.`,
+        );
+        signatureRows.push({
+          field: "verified",
+          value: "no (missing public key)",
+        });
+      } else {
+        const signingInput = `${headerSegment}.${payloadSegment}`;
+
+        try {
+          const verified = await verifyRsaSignature(
+            algorithm,
+            signingInput,
+            signatureSegment,
+            input.publicKey,
+          );
+
+          signatureRows.push({
+            field: "verified",
+            value: verified ? "yes" : "no",
+          });
+
+          if (!verified) {
+            isValid = false;
+            messages.push(
+              "Signature verification failed for provided public key.",
+            );
+          }
+        } catch {
+          isValid = false;
+          signatureRows.push({
+            field: "verified",
+            value: "no (invalid public key)",
+          });
+          messages.push(
+            "Public key could not be parsed or imported for RSA signature verification.",
+          );
+        }
+      }
     } else {
       isValid = false;
       messages.push(
-        `Unsupported algorithm '${algorithm || "(missing)"}'. Only HS256, HS384, HS512, and none are checked client-side here.`,
+        `Unsupported algorithm '${algorithm || "(missing)"}'. Only HS256, HS384, HS512, RS256, RS384, RS512, and none are checked client-side here.`,
       );
       signatureRows.push({
         field: "verified",

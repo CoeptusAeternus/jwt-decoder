@@ -50,11 +50,66 @@ async function createHmacToken(
   return `${signingInput}.${signature}`;
 }
 
+function toPemPublicKey(spkiBytes: Uint8Array): string {
+  const body = Buffer.from(spkiBytes).toString("base64");
+  const lines = body.match(/.{1,64}/g) ?? [];
+  return [
+    "-----BEGIN PUBLIC KEY-----",
+    ...lines,
+    "-----END PUBLIC KEY-----",
+  ].join("\n");
+}
+
+async function createRsaToken(
+  algorithm: "RS256" | "RS384" | "RS512",
+  payload: Record<string, unknown>,
+): Promise<{ token: string; publicKeyPem: string }> {
+  const header = { alg: algorithm, typ: "JWT" };
+  const headerSegment = encodeSegment(header);
+  const payloadSegment = encodeSegment(payload);
+  const signingInput = `${headerSegment}.${payloadSegment}`;
+
+  const hashMap: Record<"RS256" | "RS384" | "RS512", string> = {
+    RS256: "SHA-256",
+    RS384: "SHA-384",
+    RS512: "SHA-512",
+  };
+
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: hashMap[algorithm],
+    },
+    true,
+    ["sign", "verify"],
+  );
+
+  const signatureRaw = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    keyPair.privateKey,
+    new TextEncoder().encode(signingInput),
+  );
+  const signature = Buffer.from(new Uint8Array(signatureRaw)).toString(
+    "base64url",
+  );
+
+  const publicKeyRaw = await crypto.subtle.exportKey("spki", keyPair.publicKey);
+  const publicKeyPem = toPemPublicKey(new Uint8Array(publicKeyRaw));
+
+  return {
+    token: `${signingInput}.${signature}`,
+    publicKeyPem,
+  };
+}
+
 describe("decodeAndValidateJwt", () => {
   it("returns idle state for empty input", async () => {
     const result = await decodeAndValidateJwt({
       token: "   ",
       sharedSecret: "",
+      publicKey: "",
     });
 
     expect(result.validationState).toBe("idle");
@@ -69,7 +124,11 @@ describe("decodeAndValidateJwt", () => {
       { sub: "alice", role: "admin" },
     );
 
-    const result = await decodeAndValidateJwt({ token, sharedSecret: "" });
+    const result = await decodeAndValidateJwt({
+      token,
+      sharedSecret: "",
+      publicKey: "",
+    });
 
     expect(result.validationState).toBe("valid");
     expect(result.validationMessages).toContain(
@@ -83,6 +142,7 @@ describe("decodeAndValidateJwt", () => {
     const result = await decodeAndValidateJwt({
       token: "abc.def",
       sharedSecret: "",
+      publicKey: "",
     });
 
     expect(result.validationState).toBe("invalid");
@@ -97,7 +157,11 @@ describe("decodeAndValidateJwt", () => {
 
   it("returns invalid when payload is not base64url json", async () => {
     const token = `${encodeSegment({ alg: "none" })}.not-json.`;
-    const result = await decodeAndValidateJwt({ token, sharedSecret: "" });
+    const result = await decodeAndValidateJwt({
+      token,
+      sharedSecret: "",
+      publicKey: "",
+    });
 
     expect(result.validationState).toBe("invalid");
     expect(result.validationMessages).toEqual([
@@ -112,7 +176,11 @@ describe("decodeAndValidateJwt", () => {
       "top-secret",
     );
 
-    const result = await decodeAndValidateJwt({ token, sharedSecret: "" });
+    const result = await decodeAndValidateJwt({
+      token,
+      sharedSecret: "",
+      publicKey: "",
+    });
 
     expect(result.validationState).toBe("ignored");
     expect(result.validationMessages).toContain(
@@ -130,12 +198,14 @@ describe("decodeAndValidateJwt", () => {
     const validResult = await decodeAndValidateJwt({
       token,
       sharedSecret: "top-secret",
+      publicKey: "",
     });
     expect(validResult.validationState).toBe("valid");
 
     const invalidResult = await decodeAndValidateJwt({
       token,
       sharedSecret: "wrong-secret",
+      publicKey: "",
     });
     expect(invalidResult.validationState).toBe("invalid");
     expect(invalidResult.validationMessages).toContain(
@@ -157,6 +227,7 @@ describe("decodeAndValidateJwt", () => {
     const result = await decodeAndValidateJwt({
       token,
       sharedSecret: "",
+      publicKey: "",
       nowEpochSeconds: now,
     });
 
@@ -169,6 +240,48 @@ describe("decodeAndValidateJwt", () => {
     );
     expect(result.validationMessages).toContain(
       "Token appears to be issued in the future (iat claim check).",
+    );
+  });
+
+  it.each(["RS256", "RS384", "RS512"] as const)(
+    "validates %s signatures with the matching public key",
+    async (algorithm) => {
+      const { token, publicKeyPem } = await createRsaToken(algorithm, {
+        sub: "alice",
+      });
+
+      const validResult = await decodeAndValidateJwt({
+        token,
+        sharedSecret: "",
+        publicKey: publicKeyPem,
+      });
+      expect(validResult.validationState).toBe("valid");
+
+      const invalidResult = await decodeAndValidateJwt({
+        token,
+        sharedSecret: "",
+        publicKey:
+          "-----BEGIN PUBLIC KEY-----\ninvalid\n-----END PUBLIC KEY-----",
+      });
+      expect(invalidResult.validationState).toBe("invalid");
+      expect(invalidResult.validationMessages).toContain(
+        "Public key could not be parsed or imported for RSA signature verification.",
+      );
+    },
+  );
+
+  it("marks RS256 validation as ignored when public key is missing", async () => {
+    const { token } = await createRsaToken("RS256", { sub: "alice" });
+
+    const result = await decodeAndValidateJwt({
+      token,
+      sharedSecret: "",
+      publicKey: "",
+    });
+
+    expect(result.validationState).toBe("ignored");
+    expect(result.validationMessages).toContain(
+      "Signature verification ignored for RS256 because no public key was provided.",
     );
   });
 });

@@ -64,7 +64,7 @@ function onUpdateSecret(value: string | number | null) {
 }
 
 function onUpdatePublicKey(value: string | number | null) {
-  emit('update:publicKey', String(value ?? ''));
+  emit('update:publicKey', trimWrappingQuotes(String(value ?? '')));
 }
 </script>
 

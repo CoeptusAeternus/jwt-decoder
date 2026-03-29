@@ -15,10 +15,15 @@ const QInputStub = defineComponent({
   emits: ["update:modelValue"],
   setup(props, { emit }) {
     function emitValue() {
-      emit(
-        "update:modelValue",
-        props.label === "JWT" ? '"next-token"' : "'next-secret'",
-      );
+      let value = "'next-secret'";
+
+      if (props.label === "JWT") {
+        value = '"next-token"';
+      } else if (props.label.includes("public key")) {
+        value = '"next-public-key"';
+      }
+
+      emit("update:modelValue", value);
     }
 
     return { emitValue };

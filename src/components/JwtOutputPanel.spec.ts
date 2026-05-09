@@ -124,7 +124,7 @@ describe("JwtOutputPanel", () => {
     const details = wrapper.get(".claim-list");
     const toggle = wrapper.get(".list-toggle");
     expect(toggle.classes()).not.toContain("open");
-    details.element.open = true;
+    (details.element as HTMLDetailsElement).open = true;
     await details.trigger("toggle");
     await wrapper.vm.$nextTick();
     // after toggle handler runs, class should be present

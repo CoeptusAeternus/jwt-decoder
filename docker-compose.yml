@@ -6,9 +6,13 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - .:/app
-      - node_modules:/app/node_modules
-    command: pnpm dev -- --host 0.0.0.0 --port 9000 --no-open
-
-volumes:
-  node_modules:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./index.html:/app/index.html
+      - ./package.json:/app/package.json
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - ./quasar.config.ts:/app/quasar.config.ts
+      - ./eslint.config.js:/app/eslint.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vitest.config.ts:/app/vitest.config.ts

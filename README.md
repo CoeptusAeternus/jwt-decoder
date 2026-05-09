@@ -9,6 +9,26 @@ Use the app online:
 
 - https://coeptusaeternus.github.io/jwt-decoder/
 
+## Dev Container
+
+This repository includes a Docker Compose development setup that runs the app inside a container instead of using a local Node.js installation.
+
+Start the dev container with:
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:9000.
+
+The compose file mounts the source and config files into the container, while dependencies stay installed inside the image. That means there is no `node_modules` volume to manage.
+
+If you change dependencies in `package.json`, rebuild the container so the image installs the updated packages again:
+
+```bash
+docker compose up --build
+```
+
 ## Container Image (GHCR)
 
 Pull published images from GitHub Container Registry:
@@ -96,4 +116,3 @@ docker build --target test -t jwt-decoder:test .
 ```
 
 This is useful when you want containerized test execution without requiring Node.js tooling on your host machine.
-

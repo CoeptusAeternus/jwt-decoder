@@ -40,7 +40,26 @@
             <tbody>
               <tr v-for="row in payloadRows" :key="`claim-${row.field}`">
                 <td class="cell-field">{{ row.field }}</td>
-                <td class="cell-value">{{ formatValue(row.value, row.field) }}</td>
+                <td class="cell-value">
+                  <template v-if="Array.isArray(row.value)">
+                    <details class="claim-list" @toggle="(e) => onToggle(row.field, e)">
+                      <summary :aria-expanded="isOpen(row.field)">
+                        <span class="list-toggle" :class="{ open: isOpen(row.field) }" aria-hidden>▸</span>
+                        <span class="list-meta">{{ row.value.length }} item{{ row.value.length === 1 ? '' : 's' }} —
+                          List</span>
+                        <span class="list-preview" v-if="row.value.length">
+                          [{{ previewList(row.value) }}<span v-if="row.value.length > 2">...</span>]
+                        </span>
+                      </summary>
+                      <ul>
+                        <li v-for="(it, idx) in row.value" :key="`item-${row.field}-${idx}`">{{ formatValue(it) }}</li>
+                      </ul>
+                    </details>
+                  </template>
+                  <template v-else>
+                    {{ formatValue(row.value, row.field) }}
+                  </template>
+                </td>
               </tr>
             </tbody>
           </q-markup-table>
@@ -85,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 type ValidationState = 'idle' | 'valid' | 'invalid' | 'ignored';
 
@@ -104,9 +123,16 @@ function formatValue(value: unknown, key?: string): string {
     const date = new Date(numValue * 1000);
     return `${numValue} (${date.toISOString()})`;
   }
-
   if (typeof value === 'string') {
     return value;
+  }
+
+  if (Array.isArray(value)) {
+    try {
+      return `[Array(${value.length})]`;
+    } catch {
+      return '[Array]';
+    }
   }
 
   if (value === null) {
@@ -138,6 +164,25 @@ function formatValue(value: unknown, key?: string): string {
   }
 
   return '';
+}
+
+const opened = ref<Record<string, boolean>>({});
+
+function onToggle(field: string, e: Event) {
+  const el = e.target as HTMLDetailsElement;
+  opened.value[field] = !!el.open;
+}
+
+function isOpen(field: string) {
+  return !!opened.value[field];
+}
+
+function previewList(arr: unknown[]) {
+  try {
+    return arr.slice(0, 2).map((v) => formatValue(v)).join(', ');
+  } catch {
+    return '';
+  }
 }
 
 const statusText = computed(() => {
@@ -219,6 +264,46 @@ const statusColor = computed(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   word-break: break-word;
+}
+
+.claim-list summary {
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+}
+
+.claim-list ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+}
+
+.claim-list li {
+  margin: 0.15rem 0;
+}
+
+.list-toggle {
+  display: inline-block;
+  width: 1rem;
+  transform: rotate(0deg);
+  transition: transform 0.12s ease-in-out;
+  margin-right: 0.35rem;
+}
+
+.list-toggle.open {
+  transform: rotate(90deg);
+}
+
+.list-meta {
+  margin-right: 0.5rem;
+  color: rgba(24, 39, 75, 0.7);
+  font-weight: 600;
+}
+
+.list-preview {
+  color: rgba(24, 39, 75, 0.85);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
 }
 
 .output-label {

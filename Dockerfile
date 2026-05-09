@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 FROM base AS deps
 
-COPY package.json pnpm-workspace.yaml yarn.lock ./
+COPY package.json pnpm-workspace.yaml ./
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 COPY . .
 RUN pnpm run postinstall

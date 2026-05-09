@@ -84,4 +84,50 @@ describe("JwtOutputPanel", () => {
       "Signature verification failed for provided shared secret.",
     );
   });
+
+  it("renders array claims as expandable lists", async () => {
+    // 0 items
+    let wrapper = mountPanel({ payloadRows: [{ field: "arr", value: [] }] });
+    let summary = wrapper.get("summary");
+    expect(summary.text()).toContain("0 items");
+    expect(wrapper.findAll(".claim-list li").length).toBe(0);
+
+    // 1 item
+    wrapper = mountPanel({ payloadRows: [{ field: "arr", value: ["one"] }] });
+    summary = wrapper.get("summary");
+    expect(summary.text()).toContain("1 item");
+    expect(summary.text()).toContain("one");
+    expect(wrapper.findAll(".claim-list li").length).toBe(1);
+
+    // 2 items
+    wrapper = mountPanel({
+      payloadRows: [{ field: "arr", value: ["one", "two"] }],
+    });
+    summary = wrapper.get("summary");
+    expect(summary.text()).toContain("2 items");
+    expect(summary.text()).toContain("one");
+    expect(summary.text()).toContain("two");
+    expect(wrapper.findAll(".claim-list li").length).toBe(2);
+
+    // more than 2 items
+    wrapper = mountPanel({
+      payloadRows: [{ field: "arr", value: ["a", "b", "c"] }],
+    });
+    summary = wrapper.get("summary");
+    expect(summary.text()).toContain("3 items");
+    expect(summary.text()).toContain("a");
+    expect(summary.text()).toContain("b");
+    expect(summary.text()).toContain("...");
+    expect(wrapper.findAll(".claim-list li").length).toBe(3);
+
+    // icon reflects open state when toggled
+    const details = wrapper.get(".claim-list");
+    const toggle = wrapper.get(".list-toggle");
+    expect(toggle.classes()).not.toContain("open");
+    details.element.open = true;
+    await details.trigger("toggle");
+    await wrapper.vm.$nextTick();
+    // after toggle handler runs, class should be present
+    expect(wrapper.get(".list-toggle").classes()).toContain("open");
+  });
 });

@@ -1,11 +1,11 @@
-import { defineRouter } from '#q-app/wrappers';
+import { defineRouter } from "@quasar/app-vite";
 import {
   createMemoryHistory,
   createRouter,
   createWebHashHistory,
   createWebHistory,
-} from 'vue-router';
-import routes from './routes';
+} from "vue-router";
+import routes from "./routes";
 
 /*
  * If not building with SSR mode, you can
@@ -19,7 +19,7 @@ import routes from './routes';
 export default defineRouter(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
-    : process.env.VUE_ROUTER_MODE === 'history'
+    : process.env.VUE_ROUTER_MODE === "history"
       ? createWebHistory
       : createWebHashHistory;
 

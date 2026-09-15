@@ -23,10 +23,10 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import JwtInfoPanel from 'components/JwtInfoPanel.vue';
-import JwtInputPanel from 'components/JwtInputPanel.vue';
-import JwtOutputPanel from 'components/JwtOutputPanel.vue';
-import { decodeAndValidateJwt, type TableRow, type ValidationState } from 'src/utils/jwt';
+import JwtInfoPanel from '@/components/JwtInfoPanel.vue';
+import JwtInputPanel from '@/components/JwtInputPanel.vue';
+import JwtOutputPanel from '@/components/JwtOutputPanel.vue';
+import { decodeAndValidateJwt, type TableRow, type ValidationState } from '@/utils/jwt';
 
 const jwtInput = ref('');
 const sharedSecret = ref('');

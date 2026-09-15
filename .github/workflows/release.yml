@@ -81,7 +81,7 @@ jobs:
           zip -r ../../jwt-decoder-${{ github.ref_name }}.zip .
 
       - name: Upload ZIP artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jwt-decoder-${{ github.ref_name }}
           path: jwt-decoder-${{ github.ref_name }}.zip
@@ -95,7 +95,7 @@ jobs:
         run: PUBLIC_PATH=/${GITHUB_REPOSITORY#*/}/ yarn build
 
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist/spa
 
